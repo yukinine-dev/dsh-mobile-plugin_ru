@@ -49,9 +49,9 @@ window.__ModuleLoader__.load({
     }
 
     const statusText = {
-      connected: "Relay 已连接",
-      connecting: "Relay 连接中",
-      offline: "Relay 未连接",
+      connected: "Relay подключён",
+      connecting: "Relay подключается",
+      offline: "Relay не подключён",
     };
 
     function Row({ label, value }) {
@@ -75,7 +75,7 @@ window.__ModuleLoader__.load({
       const load = useCallback(async () => {
         try {
           const response = await fetch("/dsh-mobile/api/state", { cache: "no-store" });
-          if (!response.ok) throw new Error(`状态请求失败 (${response.status})`);
+          if (!response.ok) throw new Error(`Не удалось получить статус (${response.status})`);
           setState(await response.json());
           setError("");
         } catch (nextError) {
@@ -94,7 +94,7 @@ window.__ModuleLoader__.load({
       const loadSessions = useCallback(async () => {
         try {
           const response = await fetch("/dsh-mobile/api/access-sessions", { cache: "no-store" });
-          if (!response.ok) throw new Error(`访问日志请求失败 (${response.status})`);
+          if (!response.ok) throw new Error(`Не удалось загрузить журнал доступа (${response.status})`);
           const body = await response.json();
           setSessions(Array.isArray(body.sessions) ? body.sessions : []);
           setLogError("");
@@ -114,10 +114,10 @@ window.__ModuleLoader__.load({
       const loadUpdate = useCallback(async () => {
         try {
           const response = await fetch("/dsh-mobile/api/update", { cache: "no-store" });
-          if (!response.ok) throw new Error("版本检查失败");
+          if (!response.ok) throw new Error("Не удалось проверить версию");
           setUpdate(await response.json());
         } catch (nextError) {
-          setUpdate({ currentVersion: "未知", latestVersion: null, updateAvailable: false, checking: false, updating: false, restartRequired: false, error: nextError instanceof Error ? nextError.message : String(nextError) });
+          setUpdate({ currentVersion: "неизвестно", latestVersion: null, updateAvailable: false, checking: false, updating: false, restartRequired: false, error: nextError instanceof Error ? nextError.message : String(nextError) });
         }
       }, []);
 
@@ -128,7 +128,7 @@ window.__ModuleLoader__.load({
         try {
           const response = await fetch("/dsh-mobile/api/update", { method: "POST" });
           const body = await response.json();
-          if (!response.ok) throw new Error(body.message || body.reason || "更新失败");
+          if (!response.ok) throw new Error(body.message || body.reason || "Ошибка обновления");
           setUpdate(body);
         } catch (nextError) {
           setUpdate((previous) => ({ ...(previous || {}), error: nextError instanceof Error ? nextError.message : String(nextError) }));
@@ -143,7 +143,7 @@ window.__ModuleLoader__.load({
         try {
           const response = await fetch("/dsh-mobile/api/browser-access", { cache: "no-store" });
           const body = await response.json();
-          if (!response.ok) throw new Error(body.message || body.reason || "无法生成浏览器访问码");
+          if (!response.ok) throw new Error(body.message || body.reason || "Не удалось сгенерировать код доступа для браузера");
           setBrowserAccess(body);
         } catch (nextError) {
           setError(nextError instanceof Error ? nextError.message : String(nextError));
@@ -158,7 +158,7 @@ window.__ModuleLoader__.load({
         try {
           const response = await fetch("/dsh-mobile/api/pairing", { method });
           const body = await response.json();
-          if (!response.ok) throw new Error(body.message || body.reason || `操作失败 (${response.status})`);
+          if (!response.ok) throw new Error(body.message || body.reason || `Операция не выполнена (${response.status})`);
           setState((previous) => ({ ...previous, ...body }));
           if (body.phase === "unpaired") setSessions([]);
         } catch (nextError) {
@@ -170,8 +170,8 @@ window.__ModuleLoader__.load({
 
       if (!state) {
         return h("div", { className: "dshm-root" },
-          h("h2", { className: "dshm-title" }, "远程访问"),
-          h("p", { className: "dshm-subtle" }, error || "正在读取 Companion 状态…"),
+          h("h2", { className: "dshm-title" }, "Удалённый доступ"),
+          h("p", { className: "dshm-subtle" }, error || "Загрузка статуса Companion…"),
         );
       }
 
@@ -180,8 +180,8 @@ window.__ModuleLoader__.load({
       return h("section", { className: "dshm-root" },
         h("div", { className: "dshm-head" },
           h("div", null,
-            h("h2", { className: "dshm-title" }, "远程访问"),
-            h("p", { className: "dshm-subtle" }, state.phase === "paired" ? "已配对" : state.phase === "pairing" ? "等待确认" : "尚未配对"),
+            h("h2", { className: "dshm-title" }, "Удалённый доступ"),
+            h("p", { className: "dshm-subtle" }, state.phase === "paired" ? "Сопряжено" : state.phase === "pairing" ? "Ожидание подтверждения" : "Не сопряжено"),
           ),
           h("div", { className: "dshm-status" },
             h("span", { className: `dshm-dot ${connected ? "online" : waiting ? "wait" : ""}` }),
@@ -189,63 +189,63 @@ window.__ModuleLoader__.load({
           ),
         ),
         h("div", { className: "dshm-grid" },
-          h(Row, { label: "电脑名称", value: state.deviceName }),
-          h(Row, { label: "DSH", value: state.dsh === "online" ? "运行中" : "未响应" }),
+          h(Row, { label: "Имя компьютера", value: state.deviceName }),
+          h(Row, { label: "DSH", value: state.dsh === "online" ? "работает" : "не отвечает" }),
           h(Row, { label: "Relay", value: state.relay }),
-          h(Row, { label: "设备 ID", value: state.deviceId || "尚未配对" }),
+          h(Row, { label: "ID устройства", value: state.deviceId || "Не сопряжено" }),
         ),
         h("div", { className: "dshm-update" },
           h("div", { className: "dshm-update-head" },
             h("div", null,
-              h("h3", { className: "dshm-update-title" }, "插件更新"),
-              h("p", { className: "dshm-update-copy" }, update?.checking ? "正在检查版本…" : update?.error ? "暂时无法检查更新" : update?.updateAvailable ? `发现新版本 ${update.latestVersion}` : `当前版本 ${update?.currentVersion || "未知"}`),
+              h("h3", { className: "dshm-update-title" }, "Обновление плагина"),
+              h("p", { className: "dshm-update-copy" }, update?.checking ? "Проверка версии…" : update?.error ? "Не удалось проверить обновления" : update?.updateAvailable ? `Доступна новая версия ${update.latestVersion}` : `Текущая версия ${update?.currentVersion || "неизвестно"}`),
             ),
-            state.localActionsAllowed && update?.updateAvailable && h("button", { className: "dshm-button primary", type: "button", disabled: updateBusy || update?.updating, onClick: () => void runUpdate() }, updateBusy || update?.updating ? "正在更新…" : "一键更新"),
+            state.localActionsAllowed && update?.updateAvailable && h("button", { className: "dshm-button primary", type: "button", disabled: updateBusy || update?.updating, onClick: () => void runUpdate() }, updateBusy || update?.updating ? "Обновление…" : "Обновить в один клик"),
           ),
-          update?.restartRequired && h("p", { className: "dshm-note" }, "更新已安装。请重启 DSH 以加载新版本。"),
-          !state.localActionsAllowed && update?.updateAvailable && h("p", { className: "dshm-note" }, "检测到新版本，请在运行 DSH 的电脑上打开此设置页更新。"),
+          update?.restartRequired && h("p", { className: "dshm-note" }, "Обновление установлено. Перезапустите DSH, чтобы загрузить новую версию."),
+          !state.localActionsAllowed && update?.updateAvailable && h("p", { className: "dshm-note" }, "Обнаружена новая версия. Откройте эту страницу настроек на компьютере, где запущен DSH, чтобы обновить."),
         ),
         state.pairing && h("div", { className: "dshm-pair" },
           h("div", { className: "dshm-qr", dangerouslySetInnerHTML: { __html: state.pairing.qrSvg } }),
           h("div", null,
-            h("p", { className: "dshm-subtle" }, "手机配对码"),
+            h("p", { className: "dshm-subtle" }, "Код сопряжения телефона"),
             h("div", { className: "dshm-code" }, state.pairing.code),
-            h("p", { className: "dshm-subtle" }, `有效期至 ${new Date(state.pairing.expiresAt).toLocaleTimeString()}`),
+            h("p", { className: "dshm-subtle" }, `Действителен до ${new Date(state.pairing.expiresAt).toLocaleTimeString()}`),
           ),
         ),
         state.localActionsAllowed && h("div", { className: "dshm-actions" },
-          state.phase === "unpaired" && h("button", { className: "dshm-button primary", type: "button", disabled: busy, onClick: () => void action("POST") }, busy ? "正在创建…" : "生成配对码"),
-          state.phase === "pairing" && h("button", { className: "dshm-button", type: "button", disabled: busy, onClick: () => void action("DELETE") }, "取消配对"),
+          state.phase === "unpaired" && h("button", { className: "dshm-button primary", type: "button", disabled: busy, onClick: () => void action("POST") }, busy ? "Создание…" : "Сгенерировать код сопряжения"),
+          state.phase === "pairing" && h("button", { className: "dshm-button", type: "button", disabled: busy, onClick: () => void action("DELETE") }, "Отменить сопряжение"),
           state.phase === "paired" && h("button", {
             className: "dshm-button danger",
             type: "button",
             disabled: busy,
             onClick: () => {
-              if (window.confirm("移除配对后，手机将无法远程访问这台电脑。再次使用时需要重新扫码配对。")) void action("DELETE");
+              if (window.confirm("После удаления сопряжения телефон потеряет удалённый доступ к этому компьютеру. Для повторного использования нужно будет заново отсканировать QR-код.")) void action("DELETE");
             },
-          }, busy ? "正在移除…" : "移除配对"),
-          state.phase === "paired" && h("button", { className: "dshm-button", type: "button", disabled: browserBusy, onClick: () => void generateBrowserAccess() }, browserBusy ? "正在生成…" : "生成浏览器访问码"),
+          }, busy ? "Удаление…" : "Удалить сопряжение"),
+          state.phase === "paired" && h("button", { className: "dshm-button", type: "button", disabled: browserBusy, onClick: () => void generateBrowserAccess() }, browserBusy ? "Генерация…" : "Сгенерировать код доступа для браузера"),
         ),
         browserAccess && h("div", { className: "dshm-browser" },
-          h("strong", null, "浏览器绑定码"),
-          h("p", { className: "dshm-note" }, "在另一台手机或浏览器中打开此链接并登录同一账号，即可新增一个浏览器访问端。密钥位于链接片段中，不会发送给 Relay。"),
+          h("strong", null, "Код привязки браузера"),
+          h("p", { className: "dshm-note" }, "Откройте эту ссылку в другом браузере или на телефоне и войдите в тот же аккаунт, чтобы добавить ещё одну точку доступа через браузер. Ключ находится во фрагменте ссылки и не отправляется на Relay."),
           h("div", { className: "dshm-browser-qr", dangerouslySetInnerHTML: { __html: browserAccess.qrSvg } }),
           h("a", { className: "dshm-browser-link", href: browserAccess.qrPayload, target: "_blank", rel: "noreferrer" }, browserAccess.qrPayload),
         ),
-        !state.localActionsAllowed && h("p", { className: "dshm-note" }, "远程访问时仅可查看状态。配对管理请在这台电脑上操作。"),
+        !state.localActionsAllowed && h("p", { className: "dshm-note" }, "При удалённом доступе доступен только просмотр статуса. Управление сопряжением — только на этом компьютере."),
         error && h("p", { className: "dshm-error", role: "alert" }, error),
         h("div", { className: "dshm-log" },
-          h("h3", { className: "dshm-log-title" }, "访问时间线"),
+          h("h3", { className: "dshm-log-title" }, "Хронология доступа"),
           sessions.length === 0
-            ? h("div", { className: "dshm-empty" }, state.phase === "paired" ? "暂无手机访问记录" : "完成配对后显示访问记录")
+            ? h("div", { className: "dshm-empty" }, state.phase === "paired" ? "Пока нет записей о доступе с телефона" : "Записи появятся после завершения сопряжения")
             : h("ol", { className: "dshm-timeline" }, sessions.map((session) =>
                 h("li", { className: "dshm-entry", key: session.id },
                   h("div", null,
                     h("div", { className: "dshm-device" }, session.deviceLabel),
-                    h("div", { className: "dshm-meta" }, [session.platform === "ios" ? "iOS" : session.platform === "android" ? "Android" : "其他设备", session.osVersion].filter(Boolean).join(" · ")),
+                    h("div", { className: "dshm-meta" }, [session.platform === "ios" ? "iOS" : session.platform === "android" ? "Android" : "другое устройство", session.osVersion].filter(Boolean).join(" · ")),
                   ),
-                  h("div", { className: "dshm-meta" }, `开始 ${new Date(session.startedAt).toLocaleString()} · 最后访问 ${new Date(session.lastSeenAt).toLocaleString()}`),
-                  h("div", { className: "dshm-time" }, session.status === "active" ? "活跃" : session.status === "expired" ? "已过期" : "已结束"),
+                  h("div", { className: "dshm-meta" }, `Начало ${new Date(session.startedAt).toLocaleString()} · Последний доступ ${new Date(session.lastSeenAt).toLocaleString()}`),
+                  h("div", { className: "dshm-time" }, session.status === "active" ? "активно" : session.status === "expired" ? "истекло" : "завершено"),
                 ),
               )),
           logError && h("p", { className: "dshm-error", role: "alert" }, logError),
@@ -259,7 +259,7 @@ window.__ModuleLoader__.load({
         name: "settings.section",
         id: "dsh-mobile-remote-access",
         order: 20,
-        label: () => "远程访问",
+        label: () => "Удалённый доступ",
         inject: () => ({}),
       }, RemoteAccessSection));
     }
